@@ -6,6 +6,8 @@ Process the xml file and store it in an HDF5 database.
 
 
 #MODULES
+import pandas as pd
+from pandas.io import pytables as pt
 import tables as t
 import xmltodict
 import datetime
@@ -29,30 +31,30 @@ EPOCH = datetime.datetime.strptime('1/1/70', "%m/%d/%y")
 class Comment(t.IsDescription):
     """A comment object / row in the hdf5 data table."""
     score               = t.Float32Col() # comment score
-    applicant           = t.StringCol(1000) # applicant name
-    applicant_sort      = t.StringCol(1000) # applicant sort number
+    applicant           = t.StringCol(100) # applicant name
+    applicant_sort      = t.StringCol(100) # applicant sort number
     author              = t.StringCol(1000) # author name
     author_sort         = t.StringCol(1000) # author sort number
     brief               = t.BoolCol()  # is the comment brief?
-    city                = t.StringCol(1000) # city name
+    city                = t.StringCol(50) # city name
     daNumber            = t.Int64Col() # fcc number
     dateCommentPeriod   = t.Time64Col() # comment period date
     dateRcpt            = t.Time64Col() # date recieved
-    disseminated        = t.StringCol(1000) # date disseminated to public
+    disseminated        = t.Time64Col() # date disseminated to public
     exParte             = t.BoolCol() # whether an ex parte filing or not
     filenumber          = t.Int32Col() # file number
     id                  = t.Int32Col() # id number of filing
     lawfirm             = t.StringCol(1000) # law firm name
     lawfirm_sort        = t.Int32Col() # law firm sort order
-    modified            = t.StringCol(1000) # date modified
+    modified            = t.Time64Col(1000) # date modified
     pages               = t.Int32Col() # number of pages
     proceeding          = t.StringCol(1000) # proceeding name 
     regFlexAnalysis     = t.StringCol(1) # not used
     smallBusinessImpact = t.BoolCol() # small business impact indicator
-    stateCd             = t.StringCol(100) # State code
-    submissionType      = t.StringCol(100) # Type of filing
-    text                = t.StringCol(1000) # Comment text
-    viewingStatus       = t.StringCol(20) # Confidential, Sunshine, Correspondence, Unrestricted
+    stateCd             = t.BoolCol() # State code
+    submissionType      = t.StringCol(20) # Type of filing
+    text                = t.StringCol(10000) # Comment text
+    viewingStatus       = t.StringCol(15) # Confidential, Sunshine, Correspondence, Unrestricted
     zip                 = t.Int32Col() # zip code
 
 def date_to_int(date):
@@ -132,7 +134,7 @@ def set_comment_value(comment, xml):
         keyvalue = get_keyvalue(xml)
         comment[keyvalue['key']] = keyvalue['value']
     except:
-        print("FAIL: " + str(keyvalue))
+        print("FAIL: " + str(xml))
         pass
 
 def process(filein, table):
