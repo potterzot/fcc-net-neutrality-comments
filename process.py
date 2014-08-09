@@ -47,7 +47,7 @@ class Comment(t.IsDescription):
     smallBusinessImpact = t.BoolCol() # small business impact indicator
     stateCd             = t.StringCol(100) # State code
     submissionType      = t.StringCol(100) # Type of filing
-    text                = t.StringCol(10000) # Comment text
+    text                = t.StringCol(33000) # Comment text
     viewingStatus       = t.StringCol(20) # Confidential, Sunshine, Correspondence, Unrestricted
     zip                 = t.Int32Col() # zip code
 
@@ -74,8 +74,25 @@ def get_type(k):
     
     try:
         v = {
+            'score': '#text',
             'applicant': 'str',
+            'applicant_sort': 'str',
             'brief': 'bool',
+            'city': 'str',
+            'dateRcpt': 'date',
+            'disseminated': 'date',
+            'exParte': 'bool',
+            'id': 'long',
+            'modified': 'date',
+            'pages': 'int',
+            'proceeding': 'str',
+            'regFlexAnalysis': 'bool',
+            'smallBusinessImpact': 'bool',
+            'stateCd': 'str',
+            'submissionType': 'str',
+            'text': 'str',
+            'viewingStatus': 'str',
+            'zip': 'str'
 
         }[k]
         
