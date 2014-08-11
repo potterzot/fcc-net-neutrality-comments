@@ -54,7 +54,7 @@ class Comment(t.IsDescription):
     smallBusinessImpact = t.BoolCol() # small business impact indicator
     stateCd             = t.BoolCol() # State code
     submissionType      = t.StringCol(20) # Type of filing
-    text                = t.StringCol(10000) # Comment text
+    text                = t.StringCol(20000) # Comment text
     viewingStatus       = t.StringCol(15) # Confidential, Sunshine, Correspondence, Unrestricted
     zip                 = t.Int32Col() # zip code
 
