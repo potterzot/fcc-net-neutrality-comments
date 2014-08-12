@@ -1,7 +1,7 @@
 fcc_netneutrality_comments
 ==========================
 
-Fetch and process net neutrality comments. The comments can be processed into an HDF5 file that is over 5GB, or an sqlite3 database that is XX. 
+Fetch and process net neutrality comments. The comments can be processed into an HDF5 file that is over 5GB, or an sqlite3 database that is 1.2GB. 
 
 While HDF5 can typically be very nice and fast, it has some drawbacks in this case:
 
