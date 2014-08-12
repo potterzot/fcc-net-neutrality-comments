@@ -206,7 +206,7 @@ def main():
         # Convert to database
         for f in FILES:
             process(FILE_BASE+f, cursor)
-            cursor.commit()
+            sqldb.commit()
 
 if __name__ == '__main__':
     main()
