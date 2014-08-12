@@ -7,15 +7,15 @@ Process the xml file and store it in an HDF5 database.
 
 #MODULES
 import pandas as pd
-from pandas.io import pytables as pt
-import tables as t
 import xmltodict
 import datetime
 import sys
+import sqlite3 as lite
+from collections import OrderedDict
 
 #GLOBALS
 FILE_BASE = "/run/media/potterzot/My Passport/potterzot/data/fcc/"
-FILEOUT = FILE_BASE+"nn_comments.h5"
+DBOUT = FILE_BASE+"nn_comments.db"
 FILES = [
     "14-28-RAW-Solr-1.xml"
     , "14-28-RAW-Solr-2.xml"
@@ -26,48 +26,48 @@ FILES = [
     ]
 EPOCH = datetime.datetime.strptime('1/1/70', "%m/%d/%y") 
 
-
-
-class Comment(t.IsDescription):
-    """A comment object / row in the hdf5 data table."""
-    score               = t.Float32Col() # comment score
-    applicant           = t.StringCol(100) # applicant name
-    applicant_sort      = t.StringCol(100) # applicant sort number
-    author              = t.StringCol(100) # author name
-    author_sort         = t.StringCol(100) # author sort number
-    brief               = t.BoolCol()  # is the comment brief?
-    city                = t.StringCol(50) # city name
-    daNumber            = t.StringCol(20) # fcc number
-    dateCommentPeriod   = t.Time64Col() # comment period date
-    dateRcpt            = t.Time64Col() # date recieved
-    disseminated        = t.Time64Col() # date disseminated to public
-    exParte             = t.BoolCol() # whether an ex parte filing or not
-    fileNumber          = t.StringCol(100) # file number
-    id                  = t.Int32Col() # id number of filing
-    lawfirm             = t.StringCol(200) # law firm name
-    lawfirm_sort        = t.StringCol(200) # law firm sort order
-    modified            = t.Time64Col() # date modified
-    pages               = t.Int32Col() # number of pages
-    proceeding          = t.StringCol(1000) # proceeding name 
-    reportNumber        = t.StringCol(50) # proceeding name 
-    regFlexAnalysis     = t.StringCol(1) # not used
-    smallBusinessImpact = t.BoolCol() # small business impact indicator
-    stateCd             = t.BoolCol() # State code
-    submissionType      = t.StringCol(20) # Type of filing
-    text                = t.StringCol(20000) # Comment text
-    viewingStatus       = t.StringCol(15) # Confidential, Sunshine, Correspondence, Unrestricted
-    zip                 = t.Int32Col() # zip code
+TABLE = "comments"
+COLUMN_DICT = OrderedDict([
+    ('id', 'long'),
+    ('applicant', 'str'),
+    ('applicant_sort', 'str'),
+    ('author', 'str'),
+    ('author_sort', 'str'),
+    ('brief', 'bool'),
+    ('city', 'str'),
+    ('stateCd', 'str'),
+    ('zip', 'str'),
+    ('daNumber', 'str'),
+    ('dateCommentPeriod', 'date'),
+    ('dateReplyComment', 'date'),
+    ('dateRcpt', 'date'),
+    ('disseminated', 'date'),
+    ('exParte', 'bool'),
+    ('fileNumber', 'str'),
+    ('lawfirm', 'str'),
+    ('lawfirm_sort', 'str'),
+    ('modified', 'date'),
+    ('pages', 'int'),
+    ('proceeding', 'str'),
+    ('reportNumber', 'str'),
+    ('regFlexAnalysis', 'bool'),
+    ('smallBusinessImpact', 'bool'),
+    ('submissionType', 'str'),
+    ('text', 'str'),
+    ('viewingStatus', 'str'),
+    ('score', '#text'),
+])
 
 def date_to_int(date):
     """Takes a date string and returns an int."""
     try:
-        d = date[0:date.find('.')]
-        d = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%S")
+        d = date[0:date.find('.')].replace("T"," ")
+        #d = datetime.datetime.strptime(d, "%Y-%m-%dT%H:%M:%S")
     except:
         print(date)
         pass
     
-    return (d-EPOCH).total_seconds()
+    return d #(d-EPOCH).total_seconds()
 
 def get_keyvalue(xml):
     """Takes an xml string and returns a key and value pair."""
@@ -84,11 +84,15 @@ def get_keyvalue(xml):
             value = date_to_int(d2[vtype])
         elif(vtype=='bool'):
             if d2[vtype]=='true':
-                value = True
+                value = 1
             else:
-                value = False
-        elif vtype=='str':
-            value = d2[vtype].encode('UTF-8')
+                value = 0
+        elif vtype in ['str', 'long']:
+            value = str(d2[vtype]) #.encode('UTF-8')
+        elif vtype in ['int']:
+            value = int(d2[vtype])
+        elif vtype=='#text':
+            value = float(d2[vtype])
         else:
             value = d2[vtype]
         keyvalue = {'key': name, 'value': value}
@@ -102,36 +106,7 @@ def get_type(k):
     """Takes a dict. Returns undefined if not keyed, otherwise returns the key type."""
     
     try:
-        v = {
-            'score': '#text',
-            'applicant': 'str',
-            'applicant_sort': 'str',
-            'author': 'str',
-            'author_sort': 'str',
-            'brief': 'bool',
-            'city': 'str',
-            'daNumber': 'str',
-            'dateCommentPeriod': 'date',
-            'dateReplyComment': 'date',
-            'dateRcpt': 'date',
-            'disseminated': 'date',
-            'exParte': 'bool',
-            'fileNumber': 'str',
-            'id': 'long',
-            'lawfirm': 'str',
-            'lawfirm_sort': 'str',
-            'modified': 'date',
-            'pages': 'int',
-            'proceeding': 'str',
-            'reportNumber': 'str',
-            'regFlexAnalysis': 'bool',
-            'smallBusinessImpact': 'bool',
-            'stateCd': 'str',
-            'submissionType': 'str',
-            'text': 'str',
-            'viewingStatus': 'str',
-            'zip': 'str'
-        }[k]
+        v = COLUMN_DICT[k]
         
     except:
         v = False
@@ -147,7 +122,7 @@ def set_row_value(row, xml):
         print("FAIL: " + str(xml))
         pass
 
-def process(filein, store):
+def process(filein, cursor):
     """
     Take xml file and iterate through it, writing each record to an h5 table.
     table should be an h5 table
@@ -156,37 +131,82 @@ def process(filein, store):
         for line in fi:
             if len(line.strip()) > 0:
                 if line.strip() == '<doc>': # start record
-                    row = store.row
+                    new_comment = OrderedDict()
+                    for column in COLUMN_DICT.keys():
+                        new_comment[column] = None
                 elif line.strip() == '</doc>': # end record
-                    row.append()
+                    for key in new_comment.keys():
+                        if new_comment[key]==None:
+                            new_comment[key] = {'#text': "",
+                                'str': "", 
+                                'date': "", 
+                                'bool': None, 
+                                'long': None, 
+                                'int': 0}[COLUMN_DICT[key]]
+                    
+                    cursor.execute("INSERT INTO "+ TABLE + " VALUES ( \
+                        ?,?,?,?,?,?,?,?,?,?, \
+                        ?,?,?,?,?,?,?,?,?,?, \
+                        ?,?,?,?,?,?,?,?)", list(new_comment.values())) 
                 elif (line.strip()[0:4] in ['<flo', '<arr']):
                     xml = line.strip()
                     if line.strip().find('text') == -1: # not a text field
-                        set_row_value(row, xml)
+                        set_row_value(new_comment, xml)
                 elif (line.strip()[0] != '<'):
                     xml += " "+line.strip()
                 elif line.strip() == "</str></arr>":
                     xml += line.strip()
-                    set_row_value(row, xml)
-        store.flush()
+                    set_row_value(new_comment, xml)
 
 def main():
     """open the gzipped xml, process data, save as records in a pytables hdf5 table, then gzip it."""
-
     
-    # Open the HDF5 table and set it up
-    h5file = t.open_file(FILEOUT, mode = "w", title = "FCC Net Neutrality Comments")
-    group = h5file.create_group("/", 'nn_comments', 'Comment Data')
-
-    table = h5file.create_table(group, 'comments', Comment, 'Comment Data')
-    #store = pt.HDFStore(FILEOUT)
-
-    # Convert to database
-    for f in FILES:
-        process(FILE_BASE+f, table)
+    # Open SQL database and create the table
+    sqldb = None
+    sqldb = lite.connect(DBOUT)
     
-    # Close the HDF5 file
-    h5file.close()
+    with sqldb:
+        cursor = sqldb.cursor()
+    
+        # Drop the old table
+        cursor.execute("DROP TABLE IF EXISTS "+TABLE)
+        
+        # Create the new table
+        cursor.execute("CREATE TABLE " + TABLE + "(\
+            id                    TEXT \
+            , applicant           TEXT\
+            , applicant_sort      TEXT\
+            , author              TEXT\
+            , author_sort         TEXT\
+            , brief               INT \
+            , stateCd             TEXT\
+            , city                TEXT\
+            , zip                 TEXT \
+            , daNumber            TEXT\
+            , dateCommentPeriod   TEXT\
+            , dateReplyComment    TEXT\
+            , dateRcpt            TEXT\
+            , disseminated        TEXT\
+            , exParte             INT \
+            , fileNumber          TEXT\
+            , lawfirm             TEXT\
+            , lawfirm_sort        TEXT\
+            , modified            TEXT\
+            , pages               INT \
+            , proceeding          TEXT\
+            , reportNumber        TEXT\
+            , regFlexAnalysis     INT\
+            , smallBusinessImpact INT \
+            , submissionType      TEXT\
+            , text                TEXT\
+            , viewingStatus       TEXT\
+            , score               REAL  \
+        )")
+
+        # Convert to database
+        for f in FILES:
+            process(FILE_BASE+f, cursor)
+            cursor.commit()
 
 if __name__ == '__main__':
     main()
