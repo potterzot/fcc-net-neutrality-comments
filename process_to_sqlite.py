@@ -179,8 +179,8 @@ def main():
             , author              TEXT\
             , author_sort         TEXT\
             , brief               INT \
-            , stateCd             TEXT\
             , city                TEXT\
+            , stateCd             TEXT\
             , zip                 TEXT \
             , daNumber            TEXT\
             , dateCommentPeriod   TEXT\
