@@ -14,7 +14,7 @@ import sqlite3 as lite
 from collections import OrderedDict
 
 #GLOBALS
-FILE_BASE = "/run/media/potterzot/My Passport/potterzot/data/fcc/"
+FILE_BASE = "/run/media/potterzot/zfire1/data/fcc/"
 DBOUT = FILE_BASE+"nn_comments.db"
 FILES = [
     "14-28-RAW-Solr-1.xml"
@@ -198,7 +198,7 @@ def main():
             , regFlexAnalysis     INT\
             , smallBusinessImpact INT \
             , submissionType      TEXT\
-            , text                TEXT\
+            , comment_text        TEXT\
             , viewingStatus       TEXT\
             , score               REAL  \
         )")
