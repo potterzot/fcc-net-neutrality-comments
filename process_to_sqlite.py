@@ -128,6 +128,7 @@ def process(filein, cursor):
     table should be an h5 table
     """
     with open(filein, 'r') as fi:
+    	print("Processing {}".format(fi))
         for line in fi:
             if len(line.strip()) > 0:
                 if line.strip() == '<doc>': # start record
@@ -181,7 +182,7 @@ def main():
             , brief               INT \
             , city                TEXT\
             , stateCd             TEXT\
-            , zip                 TEXT \
+            , zip                 TEXT\
             , daNumber            TEXT\
             , dateCommentPeriod   TEXT\
             , dateReplyComment    TEXT\
@@ -200,7 +201,7 @@ def main():
             , submissionType      TEXT\
             , comment_text        TEXT\
             , viewingStatus       TEXT\
-            , score               REAL  \
+            , score               REAL\
         )")
 
         # Convert to database

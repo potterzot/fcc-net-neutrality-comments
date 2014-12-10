@@ -11,7 +11,6 @@ from urllib.request import urlopen, Request, urlretrieve
 TODAY = str(datetime.date.today()).replace('-','')
 URL_BASE = "http://www.fcc.gov/files/ecfs/14-28/"
 FILE_BASE = "/run/media/potterzot/zfire1/data/fcc/"
-SAVE_TO = FILE_BASE+"nn_comments.xml"
 FILES = [
     "14-28-RAW-Solr-1.xml"
     , "14-28-RAW-Solr-2.xml"
@@ -29,17 +28,16 @@ def get_files(files, saveto=False, verbose=False):
         print("%d done..." % (100*blk_size/size) )
 
     if verbose: verbose=_verbose
-    
-    if saveto: print("Saving as %s" % saveto)
 
     for f in files:
-        urlretrieve(URL_BASE+f, saveto, verbose)
+	print("Saving as %s" % f)
+        urlretrieve(URL_BASE+f, FILE_BASE+f, verbose)
 
 def main():
-    """Get the xml files from the FCC. Process them together"""
+    """Get the xml files from the FCC."""
     
     # If the data haven't been downloaded:
-    get_files(FILES, saveto=SAVE_TO, verbose=True)
+    get_files(FILES, saveto=SAVE_TO, verbose=False)
 
 if __name__ == '__main__':
     main()
